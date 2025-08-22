@@ -1,0 +1,22 @@
+[
+  {
+    "fileName": "main-overview.mdc",
+    "description": "High-level system overview documenting the core lottery prediction architecture, component interactions, and system boundaries"
+  },
+  {
+    "fileName": "prediction-algorithms.mdc",
+    "description": "Detailed documentation of key prediction algorithms including quantum-inspired sampling, chaos theory modeling, and Fibonacci pattern analysis implementations"
+  },
+  {
+    "fileName": "data-flow-architecture.mdc",
+    "description": "End-to-end data flow documentation covering crawling, processing, analysis pipeline and how data moves between prediction components"
+  },
+  {
+    "fileName": "physical-bias-analysis.mdc",
+    "description": "Technical details of the physical bias detection system including ball weight analysis, equipment monitoring, and environmental correlation algorithms"
+  },
+  {
+    "fileName": "prediction-models.mdc",
+    "description": "Documentation of the core statistical and ML models used for predictions, including their inputs, outputs, and how they work together in the unified predictor"
+  }
+]

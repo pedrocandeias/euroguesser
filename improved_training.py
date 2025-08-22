@@ -21,7 +21,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
 
-def load_comprehensive_data(csv_path='euromillions_historical_results.csv'):
+def load_comprehensive_data(csv_path='scraped_euromillions_results.csv'):
     """Load and preprocess the comprehensive historical dataset."""
     print(f"Loading comprehensive dataset from {csv_path}...")
     

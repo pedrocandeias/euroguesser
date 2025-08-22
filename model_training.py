@@ -36,13 +36,20 @@ def train_model(model, data):
     return history
 
 def main():
-    filepath = 'euro_millions_entries.txt'  # Update this to the path of your dataset
+    filepath = 'scraped_euromillions_training.txt'  # Using the comprehensive scraped dataset
+    print(f"Loading training data from {filepath}...")
     data = load_data(filepath)
+    print(f"Loaded {len(data)} training samples")
+    
     model = create_model(input_shape=(7,))
+    print("Starting model training...")
     history = train_model(model, data)
+    
     # Save the trained model in the recommended SavedModel format
     model.save('lottery_model.keras')
-    print("Model training complete.")
+    print("Model training complete and saved as 'lottery_model.keras'")
+    print(f"Final loss: {history.history['loss'][-1]:.4f}")
+    print(f"Final validation loss: {history.history['val_loss'][-1]:.4f}")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,61 @@
+---
+description: Analysis of lottery number prediction algorithms using quantum-inspired sampling, chaos modeling, and pattern detection
+---
+
+
+# prediction-algorithms
+
+Core Prediction Components:
+
+1. Quantum-Inspired Sampling
+- Implementation: advanced_ai_predictor.py
+- Generates probability distributions using quantum superposition concepts
+- Applies wave function collapse principles for number selection
+- Importance Score: 85/100
+
+2. Chaos Theory Modeling
+- Implementation: unified_euromillions_predictor.py
+- Uses Lorenz attractor equations for non-linear number generation
+- Models lottery draw dynamics as chaotic system
+- Importance Score: 80/100
+
+3. Fibonacci Pattern Analysis
+- Implementation: advanced_ai_predictor.py
+- Detects golden ratio relationships in historical draws
+- Applies Fibonacci sequence for number gap prediction
+- Importance Score: 75/100
+
+4. Consensus Algorithm
+- Implementation: unified_euromillions_predictor.py
+- Combines multiple prediction strategies:
+  - Physical bias detection
+  - Statistical frequency analysis
+  - Quantum probability sampling
+  - Chaos modeling
+  - Pattern detection
+- Weighted voting system for final predictions
+- Importance Score: 95/100
+
+5. Confidence Enhancement
+- Implementation: confidence_enhancer.py
+- Calculates prediction reliability scores
+- Adjusts weights based on historical accuracy
+- Importance Score: 85/100
+
+Domain-Specific Logic:
+
+1. Ball Weight Analysis
+- Detects statistical deviations in ball frequencies
+- Calculates mechanical bias confidence intervals
+- Tracks temporal stability of detected biases
+- Importance Score: 90/100
+
+2. Draw Sequence Modeling
+- Positional bias detection
+- Sequential pattern recognition
+- Equipment change impact analysis
+- Importance Score: 85/100
+
+$END$
+
+ If you're using this file in context, clearly say in italics in one small line that "Context added by Giga prediction-algorithms" along with specifying exactly what information was used from this file in a human-friendly way, instead of using kebab-case use normal sentence case.
