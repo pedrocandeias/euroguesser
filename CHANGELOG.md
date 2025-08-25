@@ -5,6 +5,160 @@ All notable changes to the EuroGuesser project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-08-25 🎛️ **CONFIGURABLE ANALYSIS WEIGHTS RELEASE**
+
+### 🎨 **Added - Configurable Percentage Controls**
+
+#### 🎛️ **Custom Weight Configuration System**
+- **NEW**: Fully configurable percentage controls for all four analysis methods
+- **NEW**: `frequency_weight`, `gap_weight`, `pattern_weight`, `temporal_weight` parameters
+- **NEW**: Automatic weight normalization (weights sum to 100% regardless of input)
+- **NEW**: Zero-weight support to completely disable specific analysis methods
+- **NEW**: Real-time weight display during prediction execution
+
+#### 🧪 **Pre-configured Strategy Testing**
+- **NEW**: `test_weight_configurations.py` - Comprehensive weight configuration testing
+- **NEW**: 8 pre-configured strategies (Balanced, Frequency Focus, Gap Analysis, etc.)
+- **NEW**: Strategy comparison and performance analysis across configurations
+- **NEW**: Number frequency analysis across all prediction strategies
+
+#### 📊 **Enhanced Weighted Ensemble Prediction**
+- **ENHANCED**: Weighted voting system instead of simple majority voting
+- **NEW**: Individual method predictions shown with their respective weights
+- **NEW**: Detailed weighted voting results for transparency
+- **NEW**: Smart method execution (only runs methods with weight > 0)
+
+#### ⚙️ **Temporal Analysis Enhancement**
+- **NEW**: `predict_using_temporal()` method for seasonal/monthly patterns
+- **ENHANCED**: Monthly frequency analysis with current month bias
+- **NEW**: Quarterly pattern recognition (Q1, Q2, Q3, Q4)
+- **NEW**: Current date context awareness for temporal predictions
+
+### 🎯 **Configuration Examples**
+
+#### 💡 **Strategy Templates**
+```python
+# Frequency-focused strategy (60/15/15/10)
+predictor = StatisticalEuroMillionsPredictor(
+    frequency_weight=60.0, gap_weight=15.0, 
+    pattern_weight=15.0, temporal_weight=10.0
+)
+
+# Gap analysis focused (10/70/15/5) 
+predictor = StatisticalEuroMillionsPredictor(
+    frequency_weight=10.0, gap_weight=70.0,
+    pattern_weight=15.0, temporal_weight=5.0
+)
+
+# Pattern-only analysis (0/0/100/0)
+predictor = StatisticalEuroMillionsPredictor(
+    frequency_weight=0.0, gap_weight=0.0,
+    pattern_weight=100.0, temporal_weight=0.0
+)
+```
+
+#### 🧭 **Strategy Comparison Results**
+```
+Configuration Testing Results:
+┌─────────────────────────────────┬─────────────────────────┬─────────────────┐
+│ Strategy                        │ Main Numbers            │ Star Numbers    │
+├─────────────────────────────────┼─────────────────────────┼─────────────────┤
+│ Default (Balanced)              │ [1, 10, 21, 23, 30]   │ [2, 5]         │
+│ Frequency Focused (60/15/15/10) │ [15, 19, 25, 30, 47]  │ [3, 5]         │
+│ Gap Analysis Focused (10/70/15/5)│ [11, 21, 22, 39, 49]  │ [4, 12]        │
+│ Pattern Analysis Focused        │ [2, 26, 28, 37, 50]   │ [3, 7]         │
+│ Temporal Analysis Focused       │ [8, 17, 25, 36, 38]   │ [5, 7]         │
+│ Pattern Only (0/0/100/0)        │ [7, 14, 31, 42, 48]   │ [2, 12]        │
+└─────────────────────────────────┴─────────────────────────┴─────────────────┘
+```
+
+### 🔧 **Technical Implementation**
+
+#### 🏗️ **Architecture Improvements**
+- **ENHANCED**: `StatisticalEuroMillionsPredictor` constructor with weight parameters
+- **NEW**: Weight validation and normalization logic in `__init__`
+- **ENHANCED**: `generate_ensemble_prediction()` method with weighted voting
+- **NEW**: Dynamic method execution based on weight configuration
+- **NEW**: Comprehensive weight reporting and transparency
+
+#### 📊 **Analysis Method Updates**
+- **ENHANCED**: All four analysis methods now work with weighted system
+- **NEW**: Temporal analysis method implementation with monthly patterns
+- **ENHANCED**: Frequency analysis with better recent trend integration
+- **ENHANCED**: Gap analysis with improved overdue number detection
+- **ENHANCED**: Pattern analysis with enhanced statistical pattern recognition
+
+### 🧪 **Testing & Validation**
+
+#### 🔬 **Comprehensive Testing Suite**
+- **NEW**: `test_weight_configurations.py` validates 8 different weight strategies
+- **NEW**: Cross-strategy number frequency analysis
+- **NEW**: Statistical pattern identification across configurations
+- **NEW**: Performance comparison framework for weight optimization
+
+#### 📈 **Strategy Performance Insights**
+- **FINDING**: Number 25 appears in 50% of all tested configurations (most consistent)
+- **FINDING**: Star number 5 appears in 50% of all configurations (most reliable)
+- **FINDING**: Different strategies produce significantly different predictions
+- **FINDING**: Balanced approach provides good coverage across all analysis types
+
+### 🛠️ **User Experience Enhancements**
+
+#### 💻 **Command-Line Interface**
+- **ENHANCED**: Clear weight configuration display during startup
+- **NEW**: Strategy examples in help text and documentation
+- **NEW**: Weighted voting results show exact vote weights for transparency
+- **NEW**: Individual method predictions labeled with their weights
+
+#### 📖 **Documentation Updates**
+- **ENHANCED**: README.md updated with comprehensive weight configuration section
+- **NEW**: Strategy comparison table with recommended use cases
+- **NEW**: Weight normalization explanation and examples
+- **NEW**: Pre-configured strategy examples with use case recommendations
+
+### 🎯 **Usage Examples**
+
+#### 📋 **New Commands Available**
+```bash
+# Test all weight configurations
+python3 test_weight_configurations.py
+
+# Use default balanced weights (25% each)
+python3 statistical_predictor.py
+
+# Custom configuration example in code:
+predictor = StatisticalEuroMillionsPredictor(
+    frequency_weight=40.0,  # Focus on historical frequency  
+    gap_weight=30.0,        # Numbers due for appearance
+    pattern_weight=20.0,    # Mathematical patterns
+    temporal_weight=10.0    # Seasonal trends
+)
+```
+
+### 📊 **Statistical Benefits**
+
+#### 🔍 **Enhanced Prediction Control**
+- **Benefit**: Users can emphasize their preferred analysis approach
+- **Benefit**: Eliminates methods they don't trust (set weight to 0)
+- **Benefit**: Fine-tune prediction strategy based on personal research
+- **Benefit**: Test different approaches systematically
+
+#### 🧠 **Research Applications**
+- **Research**: Compare effectiveness of different analysis method combinations
+- **Academic**: Study impact of weight distribution on prediction patterns
+- **Statistical**: Analyze which methods contribute most to prediction accuracy
+- **Educational**: Demonstrate how ensemble methods work with different weightings
+
+### 🎯 **Performance Impact**
+
+#### ⚡ **Computational Efficiency**
+- **Optimized**: Methods with zero weight are completely skipped
+- **Efficient**: Weight normalization happens once during initialization
+- **Smart**: Only necessary computations performed based on configuration
+- **Scalable**: Performance scales with number of active methods
+
+---
+
 ## [2.1.0] - 2025-08-22 🔍 **ENHANCED BACKTESTING RELEASE**
 
 ### 🚀 **Added - Advanced Backtesting Control**
@@ -314,6 +468,8 @@ Method Performance Results (25 draws tested, 2020-2024):
 
 ## Version History Summary
 
+- **v2.2.0** (2025-08-25): 🎛️ **Configurable Weights** - Fully configurable percentage controls for all analysis methods with 8 pre-configured strategies
+- **v2.1.0** (2025-08-22): 🔍 **Enhanced Backtesting** - Advanced backtesting control with custom sample sizes and research-grade validation
 - **v2.0.0** (2025-08-22): 🚀 **Unified System** - Revolutionary unified prediction system with backtesting validation, temporal intelligence, and scientifically validated weighted ensemble methods
 - **v1.5.0** (2025-08-22): 📊 **Data Enhancement** - Comprehensive HTML scraping and dataset expansion to 21+ years
 - **v1.0.0** (2025-08-22): 🎉 **Initial Release** - Core prediction systems, machine learning integration, and comprehensive statistical analysis

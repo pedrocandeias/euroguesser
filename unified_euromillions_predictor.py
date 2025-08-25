@@ -1166,12 +1166,31 @@ class UnifiedEuroMillionsPredictor:
         
         return results
     
-    def comprehensive_backtest(self, start_date='2020-01-01', end_date='2024-12-31', sample_size=30):
-        """Run comprehensive backtesting on multiple methods"""
+    def comprehensive_backtest(self, start_date='2020-01-01', end_date='2024-12-31', 
+                               sample_size=30, draws_per_method=None):
+        """Run comprehensive backtesting on multiple methods
+        
+        Args:
+            start_date (str): Start date for backtesting period (YYYY-MM-DD)
+            end_date (str): End date for backtesting period (YYYY-MM-DD)
+            sample_size (int): Total number of draws to test (distributed among methods)
+            draws_per_method (int, optional): Specific number of draws to test per method.
+                                            If None, uses sample_size distributed among methods.
+        """
         print(f"\n🔍 COMPREHENSIVE BACKTESTING ANALYSIS")
         print("="*60)
         print(f"📅 Period: {start_date} to {end_date}")
-        print(f"📊 Sample size: {sample_size} draws per method")
+        
+        # Determine actual draws per method
+        methods_count = 7  # Number of methods to test
+        if draws_per_method is not None:
+            effective_draws_per_method = draws_per_method
+            total_tests = draws_per_method * methods_count
+            print(f"📊 Draws per method: {draws_per_method}")
+            print(f"🔬 Total tests: {total_tests}")
+        else:
+            effective_draws_per_method = sample_size
+            print(f"📊 Sample size: {sample_size} draws per method")
         
         methods_to_test = [
             'Frequency Analysis',
@@ -1187,7 +1206,7 @@ class UnifiedEuroMillionsPredictor:
         
         for method in methods_to_test:
             print(f"🧪 Testing {method}...")
-            results = self.backtest_method_on_period(method, start_date, end_date, sample_size)
+            results = self.backtest_method_on_period(method, start_date, end_date, effective_draws_per_method)
             
             if 'error' not in results and results:
                 # Calculate statistics
@@ -1209,6 +1228,215 @@ class UnifiedEuroMillionsPredictor:
         
         return backtest_results
     
+    def auto_optimize_for_prize_rate(self, target_prize_rate=0.10, max_iterations=20, min_draws_per_method=5):
+        """Automatically optimize backtesting parameters to reach target prize win rate.
+        
+        Args:
+            target_prize_rate (float): Target prize win rate (default: 10%)
+            max_iterations (int): Maximum optimization iterations
+            min_draws_per_method (int): Minimum draws per method to test
+        
+        Returns:
+            dict: Best configuration found and optimization history
+        """
+        print(f"\n🎯 AUTOMATIC OPTIMIZATION MODE")
+        print("="*60)
+        print(f"🎯 Target prize win rate: {target_prize_rate:.1%}")
+        print(f"🔄 Maximum iterations: {max_iterations}")
+        print(f"📊 Minimum draws per method: {min_draws_per_method}")
+        print()
+        
+        optimization_history = []
+        best_config = None
+        best_prize_rate = 0
+        
+        # Strategy parameters to optimize
+        optimization_strategies = [
+            # Strategy 1: Increase draws per method
+            {"strategy": "increase_draws", "draws_per_method": min_draws_per_method, "year_range": (2020, 2024)},
+            {"strategy": "increase_draws", "draws_per_method": min_draws_per_method * 2, "year_range": (2020, 2024)},
+            {"strategy": "increase_draws", "draws_per_method": min_draws_per_method * 3, "year_range": (2020, 2024)},
+            
+            # Strategy 2: Adjust year ranges (more recent data)
+            {"strategy": "recent_focus", "draws_per_method": min_draws_per_method * 2, "year_range": (2022, 2024)},
+            {"strategy": "recent_focus", "draws_per_method": min_draws_per_method * 3, "year_range": (2021, 2024)},
+            
+            # Strategy 3: Historical periods
+            {"strategy": "historical_period", "draws_per_method": min_draws_per_method * 2, "year_range": (2018, 2020)},
+            {"strategy": "historical_period", "draws_per_method": min_draws_per_method * 3, "year_range": (2016, 2019)},
+            
+            # Strategy 4: Larger sample sizes
+            {"strategy": "large_sample", "draws_per_method": min_draws_per_method * 4, "year_range": (2019, 2024)},
+            {"strategy": "large_sample", "draws_per_method": min_draws_per_method * 5, "year_range": (2018, 2024)},
+            {"strategy": "large_sample", "draws_per_method": min_draws_per_method * 6, "year_range": (2017, 2024)},
+            
+            # Strategy 5: Full historical range
+            {"strategy": "full_range", "draws_per_method": min_draws_per_method * 3, "year_range": (2004, 2024)},
+            {"strategy": "full_range", "draws_per_method": min_draws_per_method * 4, "year_range": (2004, 2024)},
+            {"strategy": "full_range", "draws_per_method": min_draws_per_method * 5, "year_range": (2004, 2024)},
+            
+            # Strategy 6: Pre/Post-COVID analysis
+            {"strategy": "pre_covid", "draws_per_method": min_draws_per_method * 4, "year_range": (2015, 2019)},
+            {"strategy": "post_covid", "draws_per_method": min_draws_per_method * 3, "year_range": (2021, 2024)},
+        ]
+        
+        for iteration, config in enumerate(optimization_strategies[:max_iterations], 1):
+            print(f"🔄 Iteration {iteration}/{min(len(optimization_strategies), max_iterations)}")
+            print(f"📋 Strategy: {config['strategy']}")
+            print(f"📊 Draws per method: {config['draws_per_method']}")
+            print(f"📅 Year range: {config['year_range'][0]}-{config['year_range'][1]}")
+            
+            try:
+                # Run backtesting with current configuration
+                start_date = f"{config['year_range'][0]}-01-01"
+                end_date = f"{config['year_range'][1]}-12-31"
+                
+                results = self.comprehensive_backtest(
+                    start_date=start_date,
+                    end_date=end_date,
+                    draws_per_method=config['draws_per_method']
+                )
+                
+                # Calculate overall prize win rate
+                total_tests = 0
+                total_prize_wins = 0
+                method_results = []
+                
+                for method, method_result in results.items():
+                    if isinstance(method_result, dict) and 'total_tests' in method_result:
+                        tests = method_result['total_tests']
+                        prizes = method_result.get('any_prize', 0)
+                        total_tests += tests
+                        total_prize_wins += prizes
+                        
+                        prize_rate = prizes / tests if tests > 0 else 0
+                        method_results.append({
+                            'method': method,
+                            'tests': tests,
+                            'prizes': prizes,
+                            'prize_rate': prize_rate,
+                            'avg_score': method_result.get('avg_score', 0)
+                        })
+                
+                overall_prize_rate = total_prize_wins / total_tests if total_tests > 0 else 0
+                
+                # Store optimization step
+                optimization_step = {
+                    'iteration': iteration,
+                    'config': config.copy(),
+                    'overall_prize_rate': overall_prize_rate,
+                    'total_tests': total_tests,
+                    'total_prize_wins': total_prize_wins,
+                    'method_results': method_results,
+                    'best_method': max(method_results, key=lambda x: x['prize_rate']) if method_results else None
+                }
+                optimization_history.append(optimization_step)
+                
+                print(f"📈 Overall prize win rate: {overall_prize_rate:.1%}")
+                print(f"🏆 Total prize wins: {total_prize_wins}/{total_tests}")
+                
+                # Check if we've reached the target
+                if overall_prize_rate >= target_prize_rate:
+                    print(f"🎯 TARGET REACHED! Prize win rate: {overall_prize_rate:.1%}")
+                    best_config = optimization_step
+                    break
+                
+                # Track best configuration so far
+                if overall_prize_rate > best_prize_rate:
+                    best_prize_rate = overall_prize_rate
+                    best_config = optimization_step
+                    print(f"🌟 New best configuration! Prize rate: {overall_prize_rate:.1%}")
+                
+                # Convergence criteria: If we're very close to target, consider it reached
+                if overall_prize_rate >= target_prize_rate * 0.9:  # Within 90% of target
+                    print(f"📊 Close to target! Prize rate: {overall_prize_rate:.1%} (target: {target_prize_rate:.1%})")
+                
+                # Early stopping if no improvement in several iterations
+                if iteration >= 5:  # Need at least 5 iterations
+                    recent_rates = [step['overall_prize_rate'] for step in optimization_history[-3:]]
+                    if len(set(recent_rates)) == 1:  # No improvement in last 3 iterations
+                        print(f"⚠️  No improvement detected. Best rate: {best_prize_rate:.1%}")
+                        if iteration >= max_iterations * 0.5:  # And we're at least halfway through
+                            print("🔄 Considering early termination...")
+                            break
+                
+                print(f"⏱️  Best method: {optimization_step['best_method']['method']} ({optimization_step['best_method']['prize_rate']:.1%})")
+                print("-" * 50)
+                
+            except Exception as e:
+                print(f"❌ Error in iteration {iteration}: {e}")
+                continue
+        
+        return {
+            'target_reached': best_config is not None and best_config['overall_prize_rate'] >= target_prize_rate,
+            'best_config': best_config,
+            'optimization_history': optimization_history,
+            'target_prize_rate': target_prize_rate,
+            'iterations_run': len(optimization_history)
+        }
+    
+    def display_optimization_results(self, optimization_result):
+        """Display the results of automatic optimization."""
+        print(f"\n🎯 OPTIMIZATION RESULTS")
+        print("="*60)
+        
+        if optimization_result['target_reached']:
+            print(f"✅ TARGET ACHIEVED!")
+            best = optimization_result['best_config']
+            print(f"🏆 Best prize win rate: {best['overall_prize_rate']:.1%}")
+            print(f"📊 Configuration: {best['config']['strategy']}")
+            print(f"📈 Draws per method: {best['config']['draws_per_method']}")
+            print(f"📅 Year range: {best['config']['year_range'][0]}-{best['config']['year_range'][1]}")
+            print(f"🎲 Prize wins: {best['total_prize_wins']}/{best['total_tests']}")
+            
+            if best['best_method']:
+                print(f"🥇 Best performing method: {best['best_method']['method']}")
+                print(f"📈 Method prize rate: {best['best_method']['prize_rate']:.1%}")
+        else:
+            print(f"⚠️  Target not reached in {optimization_result['iterations_run']} iterations")
+            if optimization_result['best_config']:
+                best = optimization_result['best_config']
+                print(f"🏆 Best achieved: {best['overall_prize_rate']:.1%}")
+                print(f"📊 Best configuration: {best['config']['strategy']}")
+                print(f"📈 Draws per method: {best['config']['draws_per_method']}")
+                print(f"📅 Year range: {best['config']['year_range'][0]}-{best['config']['year_range'][1]}")
+        
+        # Show optimization progression
+        print(f"\n📈 OPTIMIZATION PROGRESSION")
+        print("="*60)
+        print("Iter | Strategy              | Draws | Year Range | Prize Rate | Prize Wins")
+        print("-" * 70)
+        
+        for step in optimization_result['optimization_history']:
+            config = step['config']
+            strategy = config['strategy'][:20]
+            draws = config['draws_per_method']
+            year_start, year_end = config['year_range']
+            prize_rate = step['overall_prize_rate']
+            wins = f"{step['total_prize_wins']}/{step['total_tests']}"
+            
+            print(f"{step['iteration']:4d} | {strategy:20s} | {draws:5d} | {year_start}-{year_end} | {prize_rate:9.1%} | {wins}")
+        
+        # Show recommended next steps
+        print(f"\n💡 RECOMMENDATIONS")
+        print("="*60)
+        
+        if optimization_result['target_reached']:
+            best = optimization_result['best_config']
+            print("🎯 Target achieved! Use this configuration for optimal results:")
+            print(f"   python3 unified_euromillions_predictor.py --backtest \\")
+            print(f"     --draws-per-method={best['config']['draws_per_method']} \\")
+            print(f"     --start-year={best['config']['year_range'][0]} \\")
+            print(f"     --end-year={best['config']['year_range'][1]}")
+        else:
+            print("🔧 Consider these approaches to reach the target:")
+            print("   • Increase maximum iterations (--max-iterations=N)")
+            print("   • Try different year ranges manually")
+            print("   • Focus on specific high-performing methods")
+            print("   • Consider that 10% prize win rate may be challenging for lottery prediction")
+        
+        return optimization_result
+
     def display_backtest_results(self, backtest_results):
         """Display formatted backtesting results"""
         print(f"\n📈 BACKTESTING RESULTS")
@@ -1364,19 +1592,141 @@ class UnifiedEuroMillionsPredictor:
         }
 
 
+def show_help():
+    """Display help information for command-line usage"""
+    print("🎯 EuroMillions Unified Predictor - Command Line Options")
+    print("="*60)
+    print()
+    print("📊 BASIC USAGE:")
+    print("  python3 unified_euromillions_predictor.py           # Regular prediction analysis")
+    print("  python3 unified_euromillions_predictor.py --help    # Show this help")
+    print()
+    print("🔍 BACKTESTING OPTIONS:")
+    print("  --backtest, -b                    # Run backtesting (default: 25 draws/method, 2020-2024)")
+    print("  --backtest --extended, -e         # Extended backtesting (50 draws/method)")
+    print()
+    print("🎯 AUTOMATIC OPTIMIZATION:")
+    print("  --auto-optimize                   # Auto-optimize parameters for 10% prize win rate")
+    print("  --target-prize-rate=X.X           # Custom target prize rate (default: 0.10 = 10%)")
+    print("  --max-iterations=N                # Maximum optimization iterations (default: 20)")
+    print("  --min-draws=N                     # Minimum draws per method (default: 5)")
+    print()
+    print("📋 CUSTOM BACKTESTING PARAMETERS:")
+    print("  --samples=NUMBER                  # Custom sample size (total draws to test)")
+    print("  --draws-per-method=NUMBER         # Specific draws to test per method")
+    print("  --start-year=YYYY                 # Start year for backtesting (default: 2020)")  
+    print("  --end-year=YYYY                   # End year for backtesting (default: 2024)")
+    print()
+    print("💡 EXAMPLES:")
+    print("  # Standard backtesting")
+    print("  python3 unified_euromillions_predictor.py --backtest")
+    print()
+    print("  # Extended backtesting")  
+    print("  python3 unified_euromillions_predictor.py --backtest --extended")
+    print()
+    print("  # Auto-optimization (find configuration for 10% prize win rate)")
+    print("  python3 unified_euromillions_predictor.py --auto-optimize")
+    print()
+    print("  # Custom auto-optimization (target 15% prize rate, max 30 iterations)")
+    print("  python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.15 --max-iterations=30")
+    print()
+    print("  # Custom: 100 draws per method, 2018-2023 period")
+    print("  python3 unified_euromillions_predictor.py --backtest --draws-per-method=100 --start-year=2018 --end-year=2023")
+    print()
+    print("  # Custom: Test 2021-2022 period with 30 draws per method")
+    print("  python3 unified_euromillions_predictor.py --backtest --draws-per-method=30 --start-year=2021 --end-year=2022")
+    print()
+    print("  # Large-scale validation: 200 draws per method, full period")
+    print("  python3 unified_euromillions_predictor.py --backtest --draws-per-method=200 --start-year=2004 --end-year=2024")
+    print()
+    print("🎯 AUTOMATIC OPTIMIZATION EXPLANATION:")
+    print("  • Auto-optimize systematically tests different configurations")
+    print("  • Adjusts draws per method, year ranges, and testing strategies")  
+    print("  • Stops when target prize win rate is achieved")
+    print("  • Reports best configuration found and optimization history")
+    print()
+    print("📊 BACKTESTING PARAMETERS EXPLANATION:")
+    print("  • --samples: Total draws distributed among 7 methods (~sample_size per method)")
+    print("  • --draws-per-method: Exact draws tested for each method (more precise control)")
+    print("  • Year range: Filter historical data to specific period for testing")
+    print("  • Methods tested: Frequency, Gap, Pattern, Temporal, Ensemble, Physical Bias, Neural Network")
+
+
 def main():
     """Main function to run unified predictor"""
     import sys
     
-    # Check for backtesting argument
+    # Check for help argument
+    if '--help' in sys.argv or '-h' in sys.argv:
+        show_help()
+        return None
+    
+    # Check for operation mode
     run_backtest = '--backtest' in sys.argv or '-b' in sys.argv
+    run_auto_optimize = '--auto-optimize' in sys.argv
     
     try:
         predictor = UnifiedEuroMillionsPredictor()
         
-        if run_backtest:
-            # Check for custom sample size
+        if run_auto_optimize:
+            # Parse auto-optimization arguments
+            target_prize_rate = 0.10  # Default 10%
+            max_iterations = 20      # Default 20 iterations  
+            min_draws_per_method = 5  # Default minimum 5 draws
+            
+            for arg in sys.argv:
+                if arg.startswith('--target-prize-rate='):
+                    try:
+                        target_prize_rate = float(arg.split('=')[1])
+                        if target_prize_rate <= 0 or target_prize_rate > 1:
+                            print("❌ Target prize rate must be between 0.01 and 1.0")
+                            return None
+                    except ValueError:
+                        print("❌ Invalid target prize rate format. Use --target-prize-rate=0.10")
+                        return None
+                elif arg.startswith('--max-iterations='):
+                    try:
+                        max_iterations = int(arg.split('=')[1])
+                        if max_iterations <= 0:
+                            print("❌ Maximum iterations must be positive")
+                            return None
+                    except ValueError:
+                        print("❌ Invalid max iterations format. Use --max-iterations=20")
+                        return None
+                elif arg.startswith('--min-draws='):
+                    try:
+                        min_draws_per_method = int(arg.split('=')[1])
+                        if min_draws_per_method <= 0:
+                            print("❌ Minimum draws per method must be positive")
+                            return None
+                    except ValueError:
+                        print("❌ Invalid min draws format. Use --min-draws=5")
+                        return None
+            
+            print(f"🎯 Starting automatic optimization")
+            print(f"🎯 Target prize win rate: {target_prize_rate:.1%}")
+            print(f"🔄 Maximum iterations: {max_iterations}")
+            print(f"📊 Minimum draws per method: {min_draws_per_method}")
+            
+            # Run automatic optimization
+            optimization_result = predictor.auto_optimize_for_prize_rate(
+                target_prize_rate=target_prize_rate,
+                max_iterations=max_iterations,
+                min_draws_per_method=min_draws_per_method
+            )
+            
+            # Display optimization results
+            predictor.display_optimization_results(optimization_result)
+            
+            return optimization_result
+            
+        elif run_backtest:
+            # Parse command-line arguments
             custom_sample_size = None
+            draws_per_method = None
+            start_year = 2020
+            end_year = 2024
+            
             for arg in sys.argv:
                 if arg.startswith('--samples='):
                     try:
@@ -1384,24 +1734,59 @@ def main():
                     except ValueError:
                         print("❌ Invalid sample size format. Use --samples=NUMBER")
                         return None
+                elif arg.startswith('--draws-per-method='):
+                    try:
+                        draws_per_method = int(arg.split('=')[1])
+                    except ValueError:
+                        print("❌ Invalid draws per method format. Use --draws-per-method=NUMBER")
+                        return None
+                elif arg.startswith('--start-year='):
+                    try:
+                        start_year = int(arg.split('=')[1])
+                    except ValueError:
+                        print("❌ Invalid start year format. Use --start-year=YYYY")
+                        return None
+                elif arg.startswith('--end-year='):
+                    try:
+                        end_year = int(arg.split('=')[1])
+                    except ValueError:
+                        print("❌ Invalid end year format. Use --end-year=YYYY")
+                        return None
             
-            # Determine sample size
-            if custom_sample_size:
+            # Validate year range
+            if start_year >= end_year:
+                print("❌ Start year must be less than end year")
+                return None
+            
+            # Determine backtesting configuration
+            if draws_per_method is not None:
+                mode = f"CUSTOM ({draws_per_method} draws/method)"
+                sample_size = draws_per_method  # Will be overridden by draws_per_method parameter
+            elif custom_sample_size:
                 sample_size = custom_sample_size
-                mode = f"CUSTOM ({sample_size})"
+                mode = f"CUSTOM ({sample_size} samples)"
             else:
                 extended_backtest = '--extended' in sys.argv or '-e' in sys.argv
                 sample_size = 50 if extended_backtest else 25
                 mode = 'EXTENDED' if extended_backtest else 'STANDARD'
             
+            # Format date strings
+            start_date = f"{start_year}-01-01"
+            end_date = f"{end_year}-12-31"
+            
             print(f"🔍 Running {mode} backtesting")
-            print(f"📊 Sample size: {sample_size} draws per method")
+            print(f"📅 Period: {start_year}-{end_year}")
+            if draws_per_method is not None:
+                print(f"🎯 Draws per method: {draws_per_method}")
+            else:
+                print(f"📊 Sample size: {sample_size} draws per method")
             
             # Run backtesting analysis
             backtest_results = predictor.comprehensive_backtest(
-                start_date='2020-01-01', 
-                end_date='2024-12-31', 
-                sample_size=sample_size
+                start_date=start_date, 
+                end_date=end_date, 
+                sample_size=sample_size,
+                draws_per_method=draws_per_method
             )
             predictor.display_backtest_results(backtest_results)
             

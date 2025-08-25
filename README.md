@@ -15,11 +15,12 @@ EuroGuesser is a sophisticated research project that implements and validates mu
 - **Temporal Intelligence**: Context-aware predictions based on day/month/season patterns
 - **Performance Rankings**: Real-time confidence scoring and method comparison
 
-### 📊 **Statistical Prediction Models**
-- **Frequency Analysis**: Deep statistical analysis using 21+ years of data (22% weight)
-- **Gap Analysis**: Numbers "overdue" for selection with statistical significance (18% weight) 
-- **Pattern Analysis**: Consecutive numbers, sum analysis, and distribution patterns (13% weight)
-- **Temporal Analysis**: Day of week, monthly, seasonal, and quarterly patterns (12% per season)
+### 📊 **Statistical Prediction Models** (Configurable Weights)
+- **Frequency Analysis**: Deep statistical analysis using 21+ years of data (default 25% weight)
+- **Gap Analysis**: Numbers "overdue" for selection with statistical significance (default 25% weight) 
+- **Pattern Analysis**: Consecutive numbers, sum analysis, and distribution patterns (default 25% weight)
+- **Temporal Analysis**: Day of week, monthly, seasonal, and quarterly patterns (default 25% weight)
+- **🎛️ NEW**: Fully configurable percentage controls for all analysis methods
 
 ### 🤖 **Machine Learning & AI** 
 - **Trained Neural Networks**: Pre-trained models using comprehensive historical dataset (18% weight)
@@ -87,11 +88,41 @@ python3 unified_euromillions_predictor.py --backtest --samples=100
 # Fast statistical predictions
 python3 quick_predictor.py
 
-# Comprehensive statistical analysis  
+# Comprehensive statistical analysis (configurable weights)
 python3 statistical_predictor.py
+
+# Test different weight configurations
+python3 test_weight_configurations.py
 
 # Overview of all methods
 python3 prediction_summary.py
+```
+
+#### 🎯 **Automatic Optimization Mode** (NEW!)
+```bash
+# Auto-optimize for 10% prize win rate (default target)
+python3 unified_euromillions_predictor.py --auto-optimize
+
+# Custom target prize rate (15%) with more iterations
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.15 --max-iterations=30
+
+# Quick optimization with lower target (5%)
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.05 --max-iterations=10
+```
+
+#### 🔧 **Enhanced Backtesting Options**
+```bash
+# Custom draws per method (more precise control)
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=50
+
+# Custom year range testing
+python3 unified_euromillions_predictor.py --backtest --start-year=2018 --end-year=2023
+
+# Comprehensive validation: 100 draws per method, 2004-2024 period  
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=100 --start-year=2004 --end-year=2024
+
+# Quick focused test: 2021-2022 period with 30 draws per method
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=30 --start-year=2021 --end-year=2022
 ```
 
 #### 🔧 **Data Management**
@@ -106,7 +137,12 @@ python3 improved_training.py
 
 ## 🏆 Performance Results (Backtesting Validation)
 
-Based on historical testing against 25 draws per method (2020-2024):
+**Configurable Testing Parameters** - You can now customize:
+- **Draws per method**: `--draws-per-method=NUMBER` (default: 25)  
+- **Year range**: `--start-year=YYYY --end-year=YYYY` (default: 2020-2024)
+- **Total samples**: `--samples=NUMBER` (distributed among methods)
+
+**Default Results** based on historical testing against 25 draws per method (2020-2024):
 
 | Rank | Method | Avg Score | Main Matches | Star Matches | Prize Wins | Confidence |
 |------|--------|-----------|--------------|--------------|------------|------------|
@@ -124,8 +160,9 @@ Based on historical testing against 25 draws per method (2020-2024):
 euroguesser/
 ├── 🎯 Core System
 │   ├── unified_euromillions_predictor.py     # 🚀 Main unified system (recommended)
-│   ├── statistical_predictor.py              # Advanced statistical analysis
+│   ├── statistical_predictor.py              # 🎛️ Advanced statistical analysis (configurable weights)
 │   ├── quick_predictor.py                    # Fast statistical predictions  
+│   ├── test_weight_configurations.py         # 🆕 Weight configuration testing
 │   ├── prediction_summary.py                 # Methods overview
 │   └── optimized_html_scraper.py             # Data extraction from HTML
 │
@@ -148,15 +185,57 @@ euroguesser/
     └── Historical implementations
 ```
 
+## 🎛️ Configurable Analysis Weights (NEW!)
+
+### 🎨 **Custom Weight Configuration**
+The statistical predictor now supports fully configurable percentage controls for all analysis methods:
+
+```python
+# Example configurations
+predictor = StatisticalEuroMillionsPredictor(
+    frequency_weight=40.0,  # 40% - Focus on historical frequency
+    gap_weight=30.0,        # 30% - Numbers due for appearance  
+    pattern_weight=20.0,    # 20% - Statistical patterns
+    temporal_weight=10.0    # 10% - Seasonal/monthly trends
+)
+```
+
+### 🧪 **Pre-configured Strategy Examples**
+```bash
+# Test 8 different strategies
+python3 test_weight_configurations.py
+```
+
+| Strategy | Frequency | Gap | Pattern | Temporal | Best For |
+|----------|-----------|-----|---------|----------|----------|
+| **Balanced** | 25% | 25% | 25% | 25% | General use |
+| **Frequency Focus** | 60% | 15% | 15% | 10% | Historical patterns |
+| **Gap Analysis** | 10% | 70% | 15% | 5% | "Due" numbers |
+| **Pattern Only** | 0% | 0% | 100% | 0% | Mathematical patterns |
+| **Temporal Focus** | 10% | 10% | 20% | 60% | Seasonal trends |
+| **Hot Numbers** | 40% | 40% | 10% | 10% | Recent activity |
+
+### ⚙️ **Analysis Method Details**
+- **Frequency Analysis**: Based on 21+ years of historical frequency data
+- **Gap Analysis**: Identifies numbers with longest gaps since last appearance  
+- **Pattern Analysis**: Even/odd ratios, sum analysis, consecutive patterns
+- **Temporal Analysis**: Monthly, seasonal, and day-of-week patterns
+
+### 🔧 **Weight Normalization**
+- Weights automatically normalize to 100% regardless of input values
+- Zero weights disable specific analysis methods entirely
+- Supports any combination of analysis approaches
+
 ## 🎯 Unified Prediction System Architecture
 
 ### 🧠 **Weighted Ensemble Method** (Primary Recommendation)
 The system combines multiple prediction approaches using scientifically validated weights:
 
-- **Statistical Methods**: 53% total weight (most reliable)
-  - Frequency Analysis: 22%
-  - Gap Analysis: 18% 
-  - Pattern Analysis: 13%
+- **Statistical Methods**: Configurable weights (default: balanced 25% each)
+  - Frequency Analysis: 25% (configurable)
+  - Gap Analysis: 25% (configurable)
+  - Pattern Analysis: 25% (configurable)
+  - Temporal Analysis: 25% (configurable)
 
 - **Temporal Analysis**: 48% potential weight (context-dependent) 
   - Season-based: 12% per season
@@ -267,30 +346,74 @@ Comprehensive historical validation system:
 
 ### 🧪 **Testing & Validation**
 
-#### 🔍 **Backtesting Options**
+#### 🎯 **Automatic Optimization (INTELLIGENT MODE)**
 ```bash
-# Quick backtesting (25 samples, ~3 minutes)
-python3 unified_euromillions_predictor.py --backtest
+# Auto-optimize to achieve 10% prize win rate (finds best configuration automatically)
+python3 unified_euromillions_predictor.py --auto-optimize
 
-# Extended backtesting (50 samples, ~8 minutes)
-python3 unified_euromillions_predictor.py --backtest --extended
+# Custom target with extended search (target 15%, up to 30 iterations)
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.15 --max-iterations=30
 
-# Research-grade backtesting (custom sample size)
-python3 unified_euromillions_predictor.py --backtest --samples=100   # ~15 minutes
-python3 unified_euromillions_predictor.py --backtest --samples=200   # ~30 minutes
-
-# Maximum validation (uses all available data ~470 samples)
-python3 unified_euromillions_predictor.py --backtest --samples=470   # ~2 hours
+# Research mode: Lower target with detailed analysis
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.08 --min-draws=10
 ```
 
-#### 📊 **Sample Size Guidelines**
-| Purpose | Sample Size | Time | Statistical Confidence | Command Example |
-|---------|-------------|------|------------------------|-----------------|
-| **Quick Test** | 10-25 | 1-3 min | Basic validation | `--backtest` |
-| **Standard** | 25-50 | 3-8 min | Good reliability | `--backtest --extended` |
-| **Research** | 75-100 | 15 min | High confidence | `--samples=100` |
-| **Academic** | 150-200 | 30 min | Publication-grade | `--samples=200` |
-| **Maximum** | ~470 | 2 hours | Ultimate validation | `--samples=470` |
+#### 🔍 **Enhanced Backtesting Options**
+```bash
+# Quick backtesting (25 draws per method, 2020-2024)
+python3 unified_euromillions_predictor.py --backtest
+
+# Extended backtesting (50 draws per method)  
+python3 unified_euromillions_predictor.py --backtest --extended
+
+# Custom sample size (distributed among 7 methods)
+python3 unified_euromillions_predictor.py --backtest --samples=100   # ~15 minutes
+
+# Precise per-method control (RECOMMENDED for research)
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=75   # 75 draws per method
+
+# Custom year range testing
+python3 unified_euromillions_predictor.py --backtest --start-year=2018 --end-year=2022
+
+# Comprehensive validation (200 draws per method, full period)
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=200 --start-year=2004 --end-year=2024
+```
+
+#### 🎯 **Automatic Optimization Parameters**
+| Parameter | Purpose | Example | Description |
+|-----------|---------|---------|-------------|
+| **`--auto-optimize`** | Enable intelligent optimization | `--auto-optimize` | Automatically find configuration for target prize rate |
+| **`--target-prize-rate=X.X`** | Target prize win rate | `--target-prize-rate=0.10` | Target 10% prize win rate (default: 0.10) |
+| **`--max-iterations=N`** | Maximum optimization rounds | `--max-iterations=25` | Test up to 25 different configurations (default: 20) |
+| **`--min-draws=N`** | Starting draws per method | `--min-draws=10` | Begin optimization with 10 draws/method (default: 5) |
+
+#### 📊 **Manual Backtesting Parameters Guide**
+| Parameter | Purpose | Example | Description |
+|-----------|---------|---------|-------------|
+| **`--samples=N`** | Total draws distributed among methods | `--samples=200` | 200 draws shared across 7 methods (~28 each) |
+| **`--draws-per-method=N`** | Exact draws per method | `--draws-per-method=50` | 50 draws tested for each of 7 methods (350 total) |
+| **`--start-year=YYYY`** | Starting year for test period | `--start-year=2018` | Only test draws from 2018 onwards |
+| **`--end-year=YYYY`** | Ending year for test period | `--end-year=2022` | Only test draws up to 2022 |
+
+#### 🎯 **Optimization Strategies Tested**
+| Strategy | Focus | Draws Range | Year Range | Purpose |
+|----------|-------|-------------|------------|---------|
+| **Increase Draws** | Sample size scaling | 5-15 per method | 2020-2024 | Find minimum viable sample |
+| **Recent Focus** | Current patterns | 10-15 per method | 2021-2024 | Emphasize recent trends |
+| **Historical Period** | Pre-COVID patterns | 10-15 per method | 2016-2020 | Historical consistency |
+| **Large Sample** | Statistical power | 20-30 per method | 2017-2024 | High confidence testing |
+| **Full Range** | Maximum data | 15-25 per method | 2004-2024 | Complete historical analysis |
+| **Pre/Post COVID** | Pattern comparison | 15-20 per method | Split periods | Economic impact analysis |
+
+#### 📋 **Sample Size Recommendations (Manual Testing)**
+| Purpose | Draws/Method | Total Tests | Time | Statistical Confidence |
+|---------|--------------|-------------|------|------------------------|
+| **Quick Test** | 10-25 | 70-175 | 2-5 min | Basic validation |
+| **Standard** | 25-50 | 175-350 | 5-15 min | Good reliability |
+| **Research** | 75-100 | 525-700 | 15-25 min | High confidence |
+| **Academic** | 150-200 | 1,050-1,400 | 30-60 min | Publication-grade |
+| **Comprehensive** | 200+ | 1,400+ | 1+ hour | Maximum validation |
+| **🎯 Auto-Optimization** | Variable | Variable | 10-60 min | **Intelligent targeting** |
 
 #### 🔧 **Individual Method Testing**
 ```bash

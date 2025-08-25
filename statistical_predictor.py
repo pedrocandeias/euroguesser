@@ -17,13 +17,41 @@ import random
 
 
 class StatisticalEuroMillionsPredictor:
-    def __init__(self, data_path='euromillions_historical_results.csv'):
-        """Initialize the predictor with historical data."""
+    def __init__(self, data_path='scraped_euromillions_results.csv',
+                 frequency_weight=25.0, gap_weight=25.0, pattern_weight=25.0, temporal_weight=25.0):
+        """Initialize the predictor with historical data and analysis weights.
+        
+        Args:
+            data_path (str): Path to the historical data CSV file
+            frequency_weight (float): Percentage weight for frequency analysis (0-100)
+            gap_weight (float): Percentage weight for gap analysis (0-100)
+            pattern_weight (float): Percentage weight for pattern analysis (0-100)
+            temporal_weight (float): Percentage weight for temporal analysis (0-100)
+            
+        Note: Weights will be normalized to sum to 100%
+        """
         self.data_path = data_path
         self.df = None
         self.main_frequencies = {}
         self.star_frequencies = {}
         self.patterns = {}
+        
+        # Normalize weights to sum to 100%
+        total_weight = frequency_weight + gap_weight + pattern_weight + temporal_weight
+        if total_weight == 0:
+            total_weight = 100
+            frequency_weight = gap_weight = pattern_weight = temporal_weight = 25
+            
+        self.frequency_weight = frequency_weight / total_weight
+        self.gap_weight = gap_weight / total_weight
+        self.pattern_weight = pattern_weight / total_weight
+        self.temporal_weight = temporal_weight / total_weight
+        
+        print(f"Analysis weights configured:")
+        print(f"  Frequency Analysis: {self.frequency_weight:.1%}")
+        print(f"  Gap Analysis: {self.gap_weight:.1%}")
+        print(f"  Pattern Analysis: {self.pattern_weight:.1%}")
+        print(f"  Temporal Analysis: {self.temporal_weight:.1%}")
         
     def load_and_analyze_data(self):
         """Load the dataset and perform comprehensive statistical analysis."""
@@ -359,37 +387,118 @@ class StatisticalEuroMillionsPredictor:
         
         return predicted_main, predicted_stars
         
+    def predict_using_temporal(self):
+        """Predict using temporal patterns (monthly/seasonal trends)."""
+        print("Generating temporal-based predictions...")
+        
+        # Get current month for seasonal bias
+        current_month = datetime.now().month
+        current_quarter = (current_month - 1) // 3 + 1
+        
+        # Use monthly frequency patterns if available
+        if 'monthly_main' in self.patterns and current_month in self.patterns['monthly_main']:
+            monthly_main_freq = self.patterns['monthly_main'][current_month]
+            monthly_star_freq = self.patterns['monthly_star'][current_month]
+        else:
+            # Fallback to overall frequencies
+            monthly_main_freq = self.main_frequencies
+            monthly_star_freq = self.star_frequencies
+        
+        # Create weighted probabilities based on monthly patterns
+        total_monthly_main = sum(monthly_main_freq.values())
+        total_monthly_star = sum(monthly_star_freq.values())
+        
+        if total_monthly_main > 0:
+            main_probabilities = {num: freq/total_monthly_main for num, freq in monthly_main_freq.items()}
+        else:
+            main_probabilities = {num: freq/sum(self.main_frequencies.values()) for num, freq in self.main_frequencies.items()}
+            
+        if total_monthly_star > 0:
+            star_probabilities = {num: freq/total_monthly_star for num, freq in monthly_star_freq.items()}
+        else:
+            star_probabilities = {num: freq/sum(self.star_frequencies.values()) for num, freq in self.star_frequencies.items()}
+        
+        # Select main numbers using weighted random selection
+        main_candidates = list(main_probabilities.keys())
+        main_weights = [main_probabilities[num] for num in main_candidates]
+        
+        predicted_main = []
+        remaining_candidates = main_candidates.copy()
+        remaining_weights = main_weights.copy()
+        
+        for _ in range(5):
+            if not remaining_candidates:
+                break
+                
+            selected_idx = np.random.choice(len(remaining_candidates), p=np.array(remaining_weights)/sum(remaining_weights))
+            selected_num = remaining_candidates[selected_idx]
+            predicted_main.append(selected_num)
+            
+            remaining_candidates.pop(selected_idx)
+            remaining_weights.pop(selected_idx)
+        
+        # Similar process for star numbers
+        star_candidates = list(star_probabilities.keys())
+        star_weights = [star_probabilities[num] for num in star_candidates]
+        
+        predicted_stars = []
+        remaining_star_candidates = star_candidates.copy()
+        remaining_star_weights = star_weights.copy()
+        
+        for _ in range(2):
+            if not remaining_star_candidates:
+                break
+                
+            selected_idx = np.random.choice(len(remaining_star_candidates), p=np.array(remaining_star_weights)/sum(remaining_star_weights))
+            selected_num = remaining_star_candidates[selected_idx]
+            predicted_stars.append(selected_num)
+            
+            remaining_star_candidates.pop(selected_idx)
+            remaining_star_weights.pop(selected_idx)
+        
+        print(f"Using temporal patterns for month {current_month} (Q{current_quarter})")
+        
+        return sorted(predicted_main), sorted(predicted_stars)
+        
     def generate_ensemble_prediction(self):
-        """Generate final prediction using ensemble of methods."""
+        """Generate final prediction using weighted ensemble of methods."""
         print("\\n" + "="*50)
-        print("GENERATING ENSEMBLE PREDICTION")
+        print("GENERATING WEIGHTED ENSEMBLE PREDICTION")
         print("="*50)
         
-        # Get predictions from different methods
-        freq_main, freq_stars = self.predict_using_frequencies()
-        pattern_main, pattern_stars = self.predict_using_patterns()
-        gap_main, gap_stars = self.predict_using_gaps()
+        # Get predictions from different methods (only if weight > 0)
+        predictions = {}
+        
+        if self.frequency_weight > 0:
+            predictions['frequency'] = self.predict_using_frequencies()
+        if self.pattern_weight > 0:
+            predictions['pattern'] = self.predict_using_patterns()
+        if self.gap_weight > 0:
+            predictions['gap'] = self.predict_using_gaps()
+        if self.temporal_weight > 0:
+            predictions['temporal'] = self.predict_using_temporal()
         
         print(f"\\nIndividual Method Predictions:")
-        print(f"Frequency-based: Main {freq_main}, Stars {freq_stars}")
-        print(f"Pattern-based:   Main {pattern_main}, Stars {pattern_stars}")
-        print(f"Gap-based:       Main {gap_main}, Stars {gap_stars}")
+        for method, (main_nums, star_nums) in predictions.items():
+            weight = getattr(self, f"{method}_weight")
+            print(f"{method.capitalize()}-based ({weight:.1%}): Main {main_nums}, Stars {star_nums}")
         
-        # Combine predictions (ensemble voting)
-        main_votes = Counter()
-        star_votes = Counter()
+        # Combine predictions using weighted voting
+        main_weighted_votes = Counter()
+        star_weighted_votes = Counter()
         
-        for nums in [freq_main, pattern_main, gap_main]:
-            for num in nums:
-                main_votes[num] += 1
+        for method, (main_nums, star_nums) in predictions.items():
+            weight = getattr(self, f"{method}_weight")
+            
+            for num in main_nums:
+                main_weighted_votes[num] += weight
                 
-        for nums in [freq_stars, pattern_stars, gap_stars]:
-            for num in nums:
-                star_votes[num] += 1
+            for num in star_nums:
+                star_weighted_votes[num] += weight
         
-        # Select most voted numbers
-        final_main = [num for num, votes in main_votes.most_common(5)]
-        final_stars = [num for num, votes in star_votes.most_common(2)]
+        # Select numbers based on weighted votes
+        final_main = [num for num, votes in main_weighted_votes.most_common(5)]
+        final_stars = [num for num, votes in star_weighted_votes.most_common(2)]
         
         # If we don't have enough numbers, fill with frequency-based selection
         if len(final_main) < 5:
@@ -401,6 +510,11 @@ class StatisticalEuroMillionsPredictor:
             remaining_stars = [num for num in range(1, 13) if num not in final_stars]
             remaining_stars.sort(key=lambda x: self.star_frequencies.get(x, 0), reverse=True)
             final_stars.extend(remaining_stars[:2-len(final_stars)])
+        
+        # Show voting details
+        print(f"\\nWeighted Voting Results:")
+        print(f"Main numbers with votes: {dict(main_weighted_votes.most_common(10))}")
+        print(f"Star numbers with votes: {dict(star_weighted_votes.most_common(6))}")
         
         return sorted(final_main), sorted(final_stars)
         
@@ -435,14 +549,29 @@ class StatisticalEuroMillionsPredictor:
 
 def main():
     """Main function to run the statistical prediction system."""
-    print("Statistical EuroMillions Prediction System")
-    print("=" * 50)
+    print("Statistical EuroMillions Prediction System with Configurable Analysis Weights")
+    print("=" * 70)
     
     # Set random seed for reproducibility (remove for random predictions)
     np.random.seed(42)
     
     try:
-        # Initialize predictor
+        # Show examples of different configurations
+        print("\\nAvailable Analysis Types:")
+        print("• Frequency Analysis: Based on historical number frequency")
+        print("• Gap Analysis: Numbers due for appearance")
+        print("• Pattern Analysis: Statistical patterns (sums, even/odd ratios)")
+        print("• Temporal Analysis: Monthly/seasonal trends")
+        print("\\nExample configurations:")
+        print("1. Default (balanced): frequency=25%, gap=25%, pattern=25%, temporal=25%")
+        print("2. Frequency-focused: frequency=50%, gap=20%, pattern=20%, temporal=10%")
+        print("3. Gap-focused: frequency=10%, gap=60%, pattern=20%, temporal=10%")
+        print("4. Pattern-only: frequency=0%, gap=0%, pattern=100%, temporal=0%")
+        
+        # Initialize predictor with default weights
+        print("\\n" + "="*70)
+        print("RUNNING WITH DEFAULT WEIGHTS")
+        print("="*70)
         predictor = StatisticalEuroMillionsPredictor()
         
         # Load and analyze data
@@ -462,7 +591,13 @@ def main():
         
         print(f"\\n" + "="*50)
         print("PREDICTION COMPLETE!")
-        print("Good luck with your EuroMillions draw! 🍀")
+        print("\\nTo use custom weights, create predictor like:")
+        print("predictor = StatisticalEuroMillionsPredictor(")
+        print("    frequency_weight=40.0,  # 40%")
+        print("    gap_weight=30.0,        # 30%")
+        print("    pattern_weight=20.0,    # 20%")
+        print("    temporal_weight=10.0    # 10%")
+        print(")")
         print("="*50)
         
         return {
