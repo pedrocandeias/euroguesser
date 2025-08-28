@@ -502,6 +502,115 @@ python3 unified_euromillions_predictor.py --auto-optimize --max-iterations=28 --
 | **45-60** | 35-50 minutes | 45-60 configs | Maximum | Academic studies, publication |
 | **60+** | 50+ minutes | 60+ configs | Extreme | Comprehensive validation |
 
+#### 🎛️ **Complete Flag Usage Examples**
+
+##### 🚩 **All Available Flags Overview**
+```bash
+# All flags for unified_euromillions_predictor.py
+--backtest                    # Enable backtesting mode
+--extended                    # Extended backtesting (50 draws per method)
+--samples=N                   # Total sample size distributed among methods
+--draws-per-method=N          # Specific draws per method (exact control)
+--start-year=YYYY             # Starting year for analysis period
+--end-year=YYYY               # Ending year for analysis period
+--auto-optimize               # Enable automatic optimization mode
+--target-prize-rate=X.X       # Target prize win rate (0.05 = 5%, 0.10 = 10%, etc.)
+--max-iterations=N            # Maximum optimization iterations
+--min-draws=N                 # Minimum draws per method for optimization
+```
+
+##### 🔧 **Comprehensive Multi-Flag Examples**
+
+**📊 Complete Backtesting with All Parameters:**
+```bash
+# Maximum precision backtesting with all parameters
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=150 --start-year=2004 --end-year=2024
+
+# Custom period analysis with specific sample control
+python3 unified_euromillions_predictor.py --backtest --samples=350 --start-year=2018 --end-year=2023
+
+# Extended backtesting with year range focus
+python3 unified_euromillions_predictor.py --backtest --extended --start-year=2020 --end-year=2024
+
+# Precise historical analysis
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=100 --start-year=2010 --end-year=2019
+```
+
+**🎯 Complete Auto-Optimization with All Parameters:**
+```bash
+# Full optimization with all auto-optimize flags
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.12 --max-iterations=35 --min-draws=8 --start-year=2015 --end-year=2024
+
+# Research-grade optimization with comprehensive parameters
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.15 --max-iterations=50 --min-draws=12 --start-year=2004 --end-year=2024
+
+# Quick optimization with focused parameters
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.08 --max-iterations=15 --min-draws=5 --start-year=2020 --end-year=2024
+
+# Academic-level comprehensive optimization
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.18 --max-iterations=60 --min-draws=15 --start-year=2004 --end-year=2024
+```
+
+**🔬 Combined Strategy Examples (Multi-Phase Analysis):**
+```bash
+# Phase 1: Quick validation (recent data, low iterations)
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.08 --max-iterations=10 --start-year=2022 --end-year=2024
+
+# Phase 2: Standard analysis (medium period, balanced iterations)  
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.10 --max-iterations=25 --start-year=2018 --end-year=2024
+
+# Phase 3: Comprehensive validation (full range, high iterations)
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.12 --max-iterations=40 --min-draws=10 --start-year=2004 --end-year=2024
+
+# Phase 4: Final verification with backtesting
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=75 --start-year=2004 --end-year=2024
+```
+
+**⚡ Performance vs Precision Trade-off Examples:**
+```bash
+# FAST: Quick development testing (~5 minutes)
+python3 unified_euromillions_predictor.py --auto-optimize --max-iterations=8 --target-prize-rate=0.06 --start-year=2021
+
+# BALANCED: Production-ready optimization (~15 minutes)
+python3 unified_euromillions_predictor.py --auto-optimize --max-iterations=22 --target-prize-rate=0.10 --min-draws=8 --start-year=2017
+
+# THOROUGH: Research-grade analysis (~35 minutes)
+python3 unified_euromillions_predictor.py --auto-optimize --max-iterations=40 --target-prize-rate=0.14 --min-draws=12 --start-year=2008 --end-year=2024
+
+# MAXIMUM: Publication-quality validation (~60+ minutes)
+python3 unified_euromillions_predictor.py --auto-optimize --max-iterations=60 --target-prize-rate=0.16 --min-draws=15 --start-year=2004 --end-year=2024
+```
+
+**🎨 Specialized Analysis Examples:**
+```bash
+# Economic impact analysis (Pre/Post COVID comparison)
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=50 --start-year=2016 --end-year=2019  # Pre-COVID
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=50 --start-year=2020 --end-year=2024  # Post-COVID
+
+# Decade comparison analysis
+python3 unified_euromillions_predictor.py --auto-optimize --max-iterations=30 --start-year=2004 --end-year=2014  # 2000s decade
+python3 unified_euromillions_predictor.py --auto-optimize --max-iterations=30 --start-year=2014 --end-year=2024  # 2010s decade
+
+# High-precision validation with specific targets
+python3 unified_euromillions_predictor.py --auto-optimize --target-prize-rate=0.20 --max-iterations=75 --min-draws=20 --start-year=2004 --end-year=2024
+
+# Sample size scaling analysis
+python3 unified_euromillions_predictor.py --backtest --samples=100 --start-year=2020    # Small sample
+python3 unified_euromillions_predictor.py --backtest --samples=500 --start-year=2015    # Large sample
+python3 unified_euromillions_predictor.py --backtest --draws-per-method=200 --start-year=2004  # Maximum sample
+```
+
+##### 📋 **Flag Combination Recommendations**
+
+| Use Case | Recommended Flags | Example Command | Duration |
+|----------|-------------------|-----------------|----------|
+| **Quick Dev Test** | `--auto-optimize --max-iterations=8` | `--auto-optimize --max-iterations=8 --target-prize-rate=0.06` | 3-5 min |
+| **Standard Analysis** | `--auto-optimize --max-iterations=20-25` | `--auto-optimize --max-iterations=22 --min-draws=8` | 12-18 min |
+| **Research Study** | `--auto-optimize --max-iterations=35+ --min-draws=10+` | `--auto-optimize --max-iterations=40 --min-draws=12 --start-year=2010` | 25-40 min |
+| **Academic Paper** | All optimization flags + full range | `--auto-optimize --target-prize-rate=0.15 --max-iterations=50 --min-draws=15 --start-year=2004 --end-year=2024` | 45-60 min |
+| **Production Validation** | `--backtest --draws-per-method=50-100` | `--backtest --draws-per-method=75 --start-year=2018` | 15-25 min |
+| **Comprehensive Study** | Maximum precision backtesting | `--backtest --draws-per-method=150 --start-year=2004 --end-year=2024` | 30-45 min |
+
 #### 📋 **Sample Size Recommendations (Manual Testing)**
 | Purpose | Draws/Method | Total Tests | Time | Statistical Confidence |
 |---------|--------------|-------------|------|------------------------|

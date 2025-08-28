@@ -399,6 +399,14 @@ benchmark_results/
 # Claude Code specific
 .claude_history
 .claude_cache
+claude/
+.claude/
+
+# Giga artifacts
+giga/
+.giga/
+giga_cache/
+.giga_history
 
 # Development artifacts
 debug/
