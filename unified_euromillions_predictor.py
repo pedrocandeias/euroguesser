@@ -33,11 +33,23 @@ except ImportError:
     SCIPY_AVAILABLE = False
 
 class UnifiedEuroMillionsPredictor:
-    def __init__(self, data_file='data/scraped_euromillions_results.csv'):
+    def __init__(self, data_file='data/scraped_euromillions_results.csv', 
+                 frequency_weight=22.0, gap_weight=18.0, pattern_weight=13.0, 
+                 temporal_weight=12.0, neural_weight=18.0, physical_weight=5.0):
         self.data_file = data_file
         self.df = None
         self.scaler_main = StandardScaler() if TF_AVAILABLE else None
         self.scaler_stars = StandardScaler() if TF_AVAILABLE else None
+        
+        # Strategy weights (percentages)
+        self.strategy_weights = {
+            'frequency': frequency_weight,
+            'gap': gap_weight, 
+            'pattern': pattern_weight,
+            'temporal': temporal_weight,
+            'neural': neural_weight,
+            'physical': physical_weight
+        }
         
         # EuroMillions constraints
         self.main_min, self.main_max = 1, 50
@@ -722,10 +734,28 @@ class UnifiedEuroMillionsPredictor:
                 training_data[:, 5:] = training_data[:, 5:] / 12.0  # Normalize star numbers
                 
                 # Generate predictions using the trained model
-                model_predictions = model.predict(training_data[-10:])  # Use last 10 draws
+                # The model was trained with sequence_length=15, so we need to use 15 draws and flatten them
+                sequence_length = 15
+                if len(training_data) >= sequence_length:
+                    last_sequence = training_data[-sequence_length:].flatten()
+                    last_sequence = last_sequence.reshape(1, -1)  # Shape: (1, 105)
+                    model_predictions = model.predict(last_sequence)  # Generate prediction for next draw
+                else:
+                    raise ValueError(f"Not enough training data. Need at least {sequence_length} draws.")
                 
-                for i in range(min(num_predictions, len(model_predictions))):
-                    pred = model_predictions[i]
+                # Generate multiple predictions with slight variations
+                base_pred = model_predictions[0]  # Get the single prediction
+                
+                for i in range(num_predictions):
+                    # Add small variations for diversity
+                    if i == 0:
+                        # First prediction uses raw model output
+                        pred = base_pred
+                    else:
+                        # Add small noise for variation
+                        noise = np.random.normal(0, 0.05, base_pred.shape)
+                        pred = base_pred + noise
+                    
                     # Denormalize
                     main_pred = pred[:5] * 50.0
                     star_pred = pred[5:] * 12.0
@@ -751,7 +781,7 @@ class UnifiedEuroMillionsPredictor:
                         'main_numbers': sorted(main_nums[:5]),
                         'star_numbers': sorted(star_nums[:2]),
                         'method': 'Trained Neural Network',
-                        'confidence': 0.8
+                        'confidence': 0.8 if i == 0 else 0.7
                     })
                 
                 return predictions
@@ -930,28 +960,34 @@ class UnifiedEuroMillionsPredictor:
         return ranked
     
     def get_method_weights(self):
-        """Define weights for each prediction method based on reliability"""
+        """Define weights for each prediction method based on configurable strategy weights"""
+        # Convert percentages to decimals
+        weights = {k: v/100.0 for k, v in self.strategy_weights.items()}
+        
+        # Distribute temporal weight across seasonal methods
+        temporal_weight_each = weights['temporal'] / 4
+        
         return {
-            # Statistical methods (most reliable)
-            'Frequency Analysis': 0.22,
-            'Gap Analysis': 0.18,
-            'Pattern Analysis': 0.13,
+            # Statistical methods
+            'Frequency Analysis': weights['frequency'],
+            'Gap Analysis': weights['gap'],
+            'Pattern Analysis': weights['pattern'],
             
-            # Temporal analysis (good scientific basis)
-            'Temporal Analysis (Winter)': 0.12,
-            'Temporal Analysis (Spring)': 0.12,
-            'Temporal Analysis (Summer)': 0.12,
-            'Temporal Analysis (Autumn)': 0.12,
+            # Temporal analysis (seasonal patterns) 
+            'Temporal Analysis (Winter)': temporal_weight_each,
+            'Temporal Analysis (Spring)': temporal_weight_each,
+            'Temporal Analysis (Summer)': temporal_weight_each,
+            'Temporal Analysis (Autumn)': temporal_weight_each,
             
-            # ML methods (good performance)
-            'Trained Neural Network': 0.18,
-            'Neural Network': 0.07,
+            # Neural Network methods
+            'Trained Neural Network': weights['neural'] * 0.7,
+            'Neural Network': weights['neural'] * 0.3,
             
-            # Physical bias (scientific basis)
-            'Physical Bias (heavy_bias)': 0.05,
-            'Physical Bias (light_compensation)': 0.04,
+            # Physical bias detection
+            'Physical Bias (heavy_bias)': weights['physical'] * 0.6,
+            'Physical Bias (light_compensation)': weights['physical'] * 0.4,
             
-            # Experimental methods (lower weight)
+            # Experimental methods (minimal weight)
             'Quantum-Inspired': 0.01,
             'Chaos Theory': 0.005,
             'Fibonacci/Golden Ratio': 0.005
@@ -1841,6 +1877,14 @@ def show_help():
     print("  --start-year=YYYY                 # Start year for backtesting (default: 2020)")  
     print("  --end-year=YYYY                   # End year for backtesting (default: 2024)")
     print()
+    print("⚙️  STRATEGY WEIGHT CONFIGURATION:")
+    print("  --frequency-weight=X.X            # Weight for frequency analysis (default: 22.0)")
+    print("  --gap-weight=X.X                  # Weight for gap analysis (default: 18.0)")
+    print("  --pattern-weight=X.X              # Weight for pattern analysis (default: 13.0)")
+    print("  --temporal-weight=X.X             # Weight for temporal analysis (default: 12.0)")
+    print("  --neural-weight=X.X               # Weight for neural network predictions (default: 18.0)")
+    print("  --physical-weight=X.X             # Weight for physical bias detection (default: 5.0)")
+    print()
     print("🎯 PREDICTION KEY GENERATION:")
     print("  --num-keys=N                      # Generate N prediction keys (default: varies by method)")
     print("  --save-to-file                    # Save prediction keys to JSON file")
@@ -1878,6 +1922,12 @@ def show_help():
     print("  # Load saved predictions and test them")
     print("  python3 unified_euromillions_predictor.py --load-and-test=predictions.json:7,14,23,35,42:3,9")
     print()
+    print("  # Custom strategy weights - Statistical focus")
+    print("  python3 unified_euromillions_predictor.py --frequency-weight=40.0 --gap-weight=30.0 --pattern-weight=20.0 --temporal-weight=10.0")
+    print()
+    print("  # Neural network focused prediction")
+    print("  python3 unified_euromillions_predictor.py --neural-weight=50.0 --frequency-weight=25.0 --gap-weight=15.0 --pattern-weight=10.0")
+    print()
     print("🎯 AUTOMATIC OPTIMIZATION EXPLANATION:")
     print("  • Auto-optimize systematically tests different configurations")
     print("  • Adjusts draws per method, year ranges, and testing strategies")  
@@ -1904,8 +1954,63 @@ def main():
     run_backtest = '--backtest' in sys.argv or '-b' in sys.argv
     run_auto_optimize = '--auto-optimize' in sys.argv
     
+    # Parse strategy weight arguments
+    strategy_weights = {
+        'frequency': 22.0,   # Default: 22%
+        'gap': 18.0,         # Default: 18%  
+        'pattern': 13.0,     # Default: 13%
+        'temporal': 12.0,    # Default: 12%
+        'neural': 18.0,      # Default: 18%
+        'physical': 5.0      # Default: 5%
+    }
+    
+    for arg in sys.argv:
+        if arg.startswith('--frequency-weight='):
+            try:
+                strategy_weights['frequency'] = float(arg.split('=')[1])
+            except ValueError:
+                print("❌ Invalid frequency-weight format. Use --frequency-weight=25.0")
+                return
+        elif arg.startswith('--gap-weight='):
+            try:
+                strategy_weights['gap'] = float(arg.split('=')[1])
+            except ValueError:
+                print("❌ Invalid gap-weight format. Use --gap-weight=20.0")
+                return
+        elif arg.startswith('--pattern-weight='):
+            try:
+                strategy_weights['pattern'] = float(arg.split('=')[1])
+            except ValueError:
+                print("❌ Invalid pattern-weight format. Use --pattern-weight=15.0")
+                return
+        elif arg.startswith('--temporal-weight='):
+            try:
+                strategy_weights['temporal'] = float(arg.split('=')[1])
+            except ValueError:
+                print("❌ Invalid temporal-weight format. Use --temporal-weight=10.0")
+                return
+        elif arg.startswith('--neural-weight='):
+            try:
+                strategy_weights['neural'] = float(arg.split('=')[1])
+            except ValueError:
+                print("❌ Invalid neural-weight format. Use --neural-weight=20.0")
+                return
+        elif arg.startswith('--physical-weight='):
+            try:
+                strategy_weights['physical'] = float(arg.split('=')[1])
+            except ValueError:
+                print("❌ Invalid physical-weight format. Use --physical-weight=8.0")
+                return
+    
     try:
-        predictor = UnifiedEuroMillionsPredictor()
+        predictor = UnifiedEuroMillionsPredictor(
+            frequency_weight=strategy_weights['frequency'],
+            gap_weight=strategy_weights['gap'], 
+            pattern_weight=strategy_weights['pattern'],
+            temporal_weight=strategy_weights['temporal'],
+            neural_weight=strategy_weights['neural'],
+            physical_weight=strategy_weights['physical']
+        )
         
         if run_auto_optimize:
             # Parse auto-optimization arguments
