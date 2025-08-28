@@ -9,6 +9,7 @@ import numpy as np
 import random
 import os
 import sys
+import json
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 import math
@@ -32,7 +33,7 @@ except ImportError:
     SCIPY_AVAILABLE = False
 
 class UnifiedEuroMillionsPredictor:
-    def __init__(self, data_file='scraped_euromillions_results.csv'):
+    def __init__(self, data_file='data/scraped_euromillions_results.csv'):
         self.data_file = data_file
         self.df = None
         self.scaler_main = StandardScaler() if TF_AVAILABLE else None
@@ -710,8 +711,8 @@ class UnifiedEuroMillionsPredictor:
         
         try:
             # Try to use pre-trained models first
-            trained_model_path = 'lottery_model.keras'
-            improved_model_path = 'improved_lottery_model.keras'
+            trained_model_path = 'models/lottery_model.keras'
+            improved_model_path = 'models/improved_lottery_model.keras'
             
             if os.path.exists(trained_model_path):
                 # Use the pre-trained model
@@ -1528,14 +1529,213 @@ class UnifiedEuroMillionsPredictor:
         
         return consensus
     
-    def run_complete_analysis(self):
+    def save_predictions_to_file(self, predictions, filename=None, num_keys=None):
+        """Save prediction keys to a JSON file"""
+        if filename is None:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            # Create predictions directory if it doesn't exist
+            predictions_dir = 'predictions'
+            os.makedirs(predictions_dir, exist_ok=True)
+            filename = os.path.join(predictions_dir, f'euromillions_predictions_{timestamp}.json')
+        
+        # Prepare data for saving
+        prediction_data = {
+            'generated_at': datetime.now().isoformat(),
+            'total_predictions': len(predictions),
+            'num_keys_requested': num_keys,
+            'predictions': []
+        }
+        
+        for i, pred in enumerate(predictions):
+            prediction_entry = {
+                'key_id': i + 1,
+                'main_numbers': pred['main_numbers'],
+                'star_numbers': pred['star_numbers'],
+                'method': pred['method'],
+                'confidence': pred['confidence']
+            }
+            
+            # Add temporal context if available
+            if 'temporal_context' in pred:
+                prediction_entry['temporal_context'] = pred['temporal_context']
+            
+            prediction_data['predictions'].append(prediction_entry)
+        
+        # Save to file
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(prediction_data, f, indent=2, ensure_ascii=False)
+            print(f"💾 Saved {len(predictions)} prediction keys to: {filename}")
+            return filename
+        except Exception as e:
+            print(f"❌ Error saving predictions: {e}")
+            return None
+    
+    def test_predictions_against_key(self, predictions, test_key_main, test_key_stars):
+        """Test predictions against a specific key"""
+        print(f"\n🎯 Testing {len(predictions)} prediction keys against test key:")
+        print(f"   Test Key: {test_key_main} | Stars: {test_key_stars}")
+        print("="*70)
+        
+        results = []
+        for i, pred in enumerate(predictions):
+            main_matches = len(set(pred['main_numbers']) & set(test_key_main))
+            star_matches = len(set(pred['star_numbers']) & set(test_key_stars))
+            
+            # Calculate EuroMillions prize score
+            score = self.calculate_euromillions_score(main_matches, star_matches)
+            prize_tier = self.get_prize_tier(main_matches, star_matches)
+            
+            result = {
+                'key_id': i + 1,
+                'main_numbers': pred['main_numbers'],
+                'star_numbers': pred['star_numbers'],
+                'method': pred['method'],
+                'confidence': pred['confidence'],
+                'main_matches': main_matches,
+                'star_matches': star_matches,
+                'score': score,
+                'prize_tier': prize_tier
+            }
+            results.append(result)
+        
+        # Sort by score (best first)
+        results.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Display results
+        print(f"{'Key':<4} {'Main Numbers':<15} {'Stars':<6} {'Method':<20} {'Matches':<10} {'Score':<6} {'Prize'}")
+        print("-"*80)
+        
+        for result in results:
+            main_str = ' '.join(f"{n:2d}" for n in result['main_numbers'])
+            star_str = ' '.join(f"{n:2d}" for n in result['star_numbers'])
+            match_str = f"{result['main_matches']}/5+{result['star_matches']}/2"
+            
+            print(f"{result['key_id']:<4} {main_str:<15} {star_str:<6} {result['method']:<20} {match_str:<10} {result['score']:<6} {result['prize_tier']}")
+        
+        # Summary statistics
+        best_result = results[0] if results else None
+        total_score = sum(r['score'] for r in results)
+        prize_winners = [r for r in results if r['score'] > 0]
+        
+        print("\n📊 TESTING SUMMARY:")
+        if best_result:
+            print(f"   🏆 Best Key: #{best_result['key_id']} - {best_result['method']} (Score: {best_result['score']})")
+        print(f"   📈 Total Score: {total_score}")
+        print(f"   🎁 Prize Winners: {len(prize_winners)}/{len(results)} keys")
+        print(f"   📊 Average Score: {total_score/len(results):.2f}")
+        
+        return results
+    
+    def load_and_test_predictions(self, predictions_file, test_key_main, test_key_stars):
+        """Load saved predictions and test against a specific key"""
+        try:
+            with open(predictions_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            predictions = data['predictions']
+            print(f"📁 Loaded {len(predictions)} prediction keys from: {predictions_file}")
+            
+            # Convert back to prediction format
+            pred_list = []
+            for pred in predictions:
+                pred_list.append({
+                    'main_numbers': pred['main_numbers'],
+                    'star_numbers': pred['star_numbers'],
+                    'method': pred['method'],
+                    'confidence': pred['confidence']
+                })
+            
+            return self.test_predictions_against_key(pred_list, test_key_main, test_key_stars)
+            
+        except FileNotFoundError:
+            print(f"❌ Predictions file not found: {predictions_file}")
+            return None
+        except Exception as e:
+            print(f"❌ Error loading predictions: {e}")
+            return None
+    
+    def calculate_euromillions_score(self, main_matches, star_matches):
+        """Calculate EuroMillions prize score based on matches"""
+        if main_matches == 5 and star_matches == 2:
+            return 100  # Jackpot
+        elif main_matches == 5 and star_matches == 1:
+            return 90   # 2nd prize
+        elif main_matches == 5 and star_matches == 0:
+            return 80   # 3rd prize
+        elif main_matches == 4 and star_matches == 2:
+            return 70   # 4th prize
+        elif main_matches == 4 and star_matches == 1:
+            return 60   # 5th prize
+        elif main_matches == 4 and star_matches == 0:
+            return 50   # 6th prize
+        elif main_matches == 3 and star_matches == 2:
+            return 40   # 7th prize
+        elif main_matches == 2 and star_matches == 2:
+            return 30   # 8th prize
+        elif main_matches == 3 and star_matches == 1:
+            return 25   # 9th prize
+        elif main_matches == 3 and star_matches == 0:
+            return 20   # 10th prize
+        elif main_matches == 1 and star_matches == 2:
+            return 15   # 11th prize
+        elif main_matches == 2 and star_matches == 1:
+            return 10   # 12th prize
+        elif main_matches == 2 and star_matches == 0:
+            return 5    # 13th prize
+        else:
+            return 0    # No prize
+    
+    def get_prize_tier(self, main_matches, star_matches):
+        """Get prize tier description"""
+        if main_matches == 5 and star_matches == 2:
+            return "Jackpot"
+        elif main_matches == 5 and star_matches == 1:
+            return "2nd Prize"
+        elif main_matches == 5 and star_matches == 0:
+            return "3rd Prize"
+        elif main_matches == 4 and star_matches == 2:
+            return "4th Prize"
+        elif main_matches == 4 and star_matches == 1:
+            return "5th Prize"
+        elif main_matches == 4 and star_matches == 0:
+            return "6th Prize"
+        elif main_matches == 3 and star_matches == 2:
+            return "7th Prize"
+        elif main_matches == 2 and star_matches == 2:
+            return "8th Prize"
+        elif main_matches == 3 and star_matches == 1:
+            return "9th Prize"
+        elif main_matches == 3 and star_matches == 0:
+            return "10th Prize"
+        elif main_matches == 1 and star_matches == 2:
+            return "11th Prize"
+        elif main_matches == 2 and star_matches == 1:
+            return "12th Prize"
+        elif main_matches == 2 and star_matches == 0:
+            return "13th Prize"
+        else:
+            return "No Prize"
+    
+    def run_complete_analysis(self, num_prediction_keys=None, save_to_file=False, test_against_key=None):
         """Run complete unified prediction analysis"""
         print("🎯 UNIFIED EUROMILLIONS PREDICTION SYSTEM")
         print("="*60)
         print("Combining all prediction methods for comprehensive analysis")
         
+        if num_prediction_keys is not None:
+            print(f"🎯 Generating {num_prediction_keys} prediction keys")
+        
+        # Determine number of predictions per method based on num_prediction_keys
+        if num_prediction_keys is not None:
+            # Calculate predictions per method to reach approximately num_prediction_keys
+            # We have 9 methods, so divide by 9 and round up
+            predictions_per_method = max(1, (num_prediction_keys + 8) // 9)
+        else:
+            predictions_per_method = 2
+            
         # Generate all predictions
-        all_predictions = self.generate_all_predictions(predictions_per_method=2)
+        all_predictions = self.generate_all_predictions(predictions_per_method=predictions_per_method)
         
         # Generate weighted ensemble prediction
         weighted_ensemble = self.create_smart_ensemble_prediction(all_predictions)
@@ -1579,7 +1779,14 @@ class UnifiedEuroMillionsPredictor:
         for method, count in method_counts.items():
             print(f"   {method:25s}: {count} predictions")
         
-        return {
+        # Handle num_prediction_keys - limit predictions if specified
+        if num_prediction_keys is not None and len(all_predictions) > num_prediction_keys:
+            # Sort by confidence and take top N
+            all_predictions_sorted = sorted(all_predictions, key=lambda x: x['confidence'], reverse=True)
+            all_predictions = all_predictions_sorted[:num_prediction_keys]
+            print(f"\n📊 Limited to top {num_prediction_keys} prediction keys by confidence")
+        
+        result = {
             'all_predictions': all_predictions,
             'ranked_predictions': ranked_predictions,
             'consensus': consensus,
@@ -1590,6 +1797,23 @@ class UnifiedEuroMillionsPredictor:
                 'consensus_confidence': consensus['confidence']
             }
         }
+        
+        # Save to file if requested
+        if save_to_file:
+            saved_file = self.save_predictions_to_file(all_predictions, num_keys=num_prediction_keys)
+            result['saved_file'] = saved_file
+        
+        # Test against key if provided
+        if test_against_key is not None:
+            if isinstance(test_against_key, dict) and 'main' in test_against_key and 'stars' in test_against_key:
+                test_results = self.test_predictions_against_key(
+                    all_predictions, 
+                    test_against_key['main'], 
+                    test_against_key['stars']
+                )
+                result['test_results'] = test_results
+        
+        return result
 
 
 def show_help():
@@ -1617,6 +1841,12 @@ def show_help():
     print("  --start-year=YYYY                 # Start year for backtesting (default: 2020)")  
     print("  --end-year=YYYY                   # End year for backtesting (default: 2024)")
     print()
+    print("🎯 PREDICTION KEY GENERATION:")
+    print("  --num-keys=N                      # Generate N prediction keys (default: varies by method)")
+    print("  --save-to-file                    # Save prediction keys to JSON file")
+    print("  --test-key=main1,main2,main3,main4,main5:star1,star2  # Test predictions against specific key")
+    print("  --load-and-test=filename.json:main1,main2,main3,main4,main5:star1,star2  # Load and test saved predictions")
+    print()
     print("💡 EXAMPLES:")
     print("  # Standard backtesting")
     print("  python3 unified_euromillions_predictor.py --backtest")
@@ -1638,6 +1868,15 @@ def show_help():
     print()
     print("  # Large-scale validation: 200 draws per method, full period")
     print("  python3 unified_euromillions_predictor.py --backtest --draws-per-method=200 --start-year=2004 --end-year=2024")
+    print()
+    print("  # Generate 20 prediction keys and save to file")
+    print("  python3 unified_euromillions_predictor.py --num-keys=20 --save-to-file")
+    print()
+    print("  # Generate 15 keys and test against specific key")
+    print("  python3 unified_euromillions_predictor.py --num-keys=15 --test-key=7,14,23,35,42:3,9")
+    print()
+    print("  # Load saved predictions and test them")
+    print("  python3 unified_euromillions_predictor.py --load-and-test=predictions.json:7,14,23,35,42:3,9")
     print()
     print("🎯 AUTOMATIC OPTIMIZATION EXPLANATION:")
     print("  • Auto-optimize systematically tests different configurations")
@@ -1797,8 +2036,81 @@ def main():
             results = predictor.run_complete_analysis()
             return {'predictions': results, 'backtest': backtest_results}
         else:
-            # Regular prediction analysis
-            results = predictor.run_complete_analysis()
+            # Check for load-and-test mode
+            load_and_test_arg = None
+            for arg in sys.argv:
+                if arg.startswith('--load-and-test='):
+                    load_and_test_arg = arg.split('=', 1)[1]
+                    break
+            
+            if load_and_test_arg:
+                # Parse load-and-test argument: filename.json:main1,main2,main3,main4,main5:star1,star2
+                try:
+                    parts = load_and_test_arg.split(':')
+                    if len(parts) != 3:
+                        print("❌ Invalid load-and-test format. Use: filename.json:main1,main2,main3,main4,main5:star1,star2")
+                        return None
+                    
+                    filename = parts[0]
+                    main_numbers = [int(x) for x in parts[1].split(',')]
+                    star_numbers = [int(x) for x in parts[2].split(',')]
+                    
+                    if len(main_numbers) != 5 or len(star_numbers) != 2:
+                        print("❌ Test key must have exactly 5 main numbers and 2 star numbers")
+                        return None
+                    
+                    results = predictor.load_and_test_predictions(filename, main_numbers, star_numbers)
+                    return {'test_results': results}
+                    
+                except (ValueError, IndexError) as e:
+                    print(f"❌ Error parsing load-and-test argument: {e}")
+                    return None
+            
+            # Parse regular prediction parameters
+            num_keys = None
+            save_to_file = False
+            test_key = None
+            
+            for arg in sys.argv:
+                if arg.startswith('--num-keys='):
+                    try:
+                        num_keys = int(arg.split('=')[1])
+                        if num_keys <= 0:
+                            print("❌ Number of keys must be positive")
+                            return None
+                    except ValueError:
+                        print("❌ Invalid num-keys format. Use --num-keys=20")
+                        return None
+                elif arg == '--save-to-file':
+                    save_to_file = True
+                elif arg.startswith('--test-key='):
+                    # Parse test key: main1,main2,main3,main4,main5:star1,star2
+                    try:
+                        test_key_str = arg.split('=', 1)[1]
+                        parts = test_key_str.split(':')
+                        if len(parts) != 2:
+                            print("❌ Invalid test-key format. Use: main1,main2,main3,main4,main5:star1,star2")
+                            return None
+                        
+                        main_numbers = [int(x) for x in parts[0].split(',')]
+                        star_numbers = [int(x) for x in parts[1].split(',')]
+                        
+                        if len(main_numbers) != 5 or len(star_numbers) != 2:
+                            print("❌ Test key must have exactly 5 main numbers and 2 star numbers")
+                            return None
+                            
+                        test_key = {'main': main_numbers, 'stars': star_numbers}
+                        
+                    except (ValueError, IndexError) as e:
+                        print(f"❌ Error parsing test key: {e}")
+                        return None
+            
+            # Regular prediction analysis with new parameters
+            results = predictor.run_complete_analysis(
+                num_prediction_keys=num_keys,
+                save_to_file=save_to_file,
+                test_against_key=test_key
+            )
             return results
             
     except Exception as e:

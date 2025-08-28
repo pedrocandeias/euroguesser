@@ -1,0 +1,55 @@
+{
+  "generated_at": "2025-08-28T09:18:23.589023",
+  "total_predictions": 3,
+  "num_keys_requested": 3,
+  "predictions": [
+    {
+      "key_id": 1,
+      "main_numbers": [
+        1,
+        4,
+        21,
+        28,
+        41
+      ],
+      "star_numbers": [
+        3,
+        12
+      ],
+      "method": "Physical Bias (heavy_bias)",
+      "confidence": 0.8
+    },
+    {
+      "key_id": 2,
+      "main_numbers": [
+        12,
+        17,
+        25,
+        41,
+        43
+      ],
+      "star_numbers": [
+        2,
+        9
+      ],
+      "method": "Trained Neural Network",
+      "confidence": 0.8
+    },
+    {
+      "key_id": 3,
+      "main_numbers": [
+        15,
+        17,
+        20,
+        24,
+        45
+      ],
+      "star_numbers": [
+        8,
+        10
+      ],
+      "method": "Frequency Analysis",
+      "confidence": 0.7
+    }
+  ]
+}
