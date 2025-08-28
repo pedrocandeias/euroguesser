@@ -76,7 +76,7 @@ class OptimizedEuroMillionsHTMLScraper:
         print(f"\nTotal valid draws: {len(self.results)}")
         return self.results
     
-    def save_to_csv(self, output_file='scraped_euromillions_results.csv'):
+    def save_to_csv(self, output_file='../data/scraped_euromillions_results.csv'):
         """Save results to CSV in chronological order"""
         if not self.results:
             print("No results to save")

@@ -17,7 +17,7 @@ import random
 
 
 class StatisticalEuroMillionsPredictor:
-    def __init__(self, data_path='scraped_euromillions_results.csv',
+    def __init__(self, data_path='../data/scraped_euromillions_results.csv',
                  frequency_weight=25.0, gap_weight=25.0, pattern_weight=25.0, temporal_weight=25.0):
         """Initialize the predictor with historical data and analysis weights.
         
